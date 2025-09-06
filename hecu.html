@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HECU Org Chart - Styled</title>
+<style>
+  /* Базовые стили */
+  body {
+    font-family: 'Arial', sans-serif;
+    background: url('https://images.unsplash.com/photo-1592003328455-5a8320c29a46?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6); /* затемнение фона */
+    z-index: -1;
+  }
+
+  h1 {
+    margin-top: 20px;
+    font-size: 2em;
+    text-shadow: 2px 2px #000;
+  }
+
+  .chart { display: flex; flex-direction: column; align-items: center; }
+  .level { display: flex; justify-content: center; margin: 20px 0; flex-wrap: wrap; position: relative; }
+  .block {
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px;
+    min-width: 160px;
+    box-shadow: 0 0 15px #000;
+    position: relative;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    background: rgba(50,50,50,0.8);
+    border: 2px solid #27ae60;
+  }
+  .block:hover { 
+    transform: scale(1.05);
+    box-shadow: 0 0 25px #27ae60;
+  }
+
+  .officer { border-color: #1f618d; }
+  .nco { border-color: #27ae60; }
+  .specialist { border-color: #d35400; }
+
+  svg { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+
+  .tooltip {
+    position: absolute;
+    background: rgba(0,0,0,0.9);
+    color: #fff;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    display: none;
+    z-index: 10;
+    max-width: 250px;
+    text-align: left;
+    box-shadow: 0 0 10px #000;
+  }
+
+  /* Музыкальный плейер скрыт */
+  audio { display: none; }
+</style>
+</head>
+<body>
+
+<h1>HECU Org Chart</h1>
+
+<!-- Фоновая музыка -->
+<audio autoplay loop>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+  Ваш браузер не поддерживает аудио.
+</audio>
+
+<div class="chart" id="orgChart">
+  <!-- Company Commander -->
+  <div class="level" id="level1">
+    <div class="block officer" id="companyCommander" data-info="Командир Роты - CPT - Эмиль/Enjoyer">Company Commander<br>CPT - Эмиль</div>
+  </div>
+
+  <!-- Platoon Commander & Drill Sergeant -->
+  <div class="level" id="level2">
+    <div class="block officer" id="platoonCommander" data-info="Командир взвода - 2LT - Валера/Azurmangheli">Platoon Commander<br>2LT - Валера</div>
+    <div class="block nco" id="drillSgt" data-info="Дрилл Сержант - SFC - Коля/Soberhiem (не подчиняется никому)">Drill Sergeant<br>SFC - Коля</div>
+  </div>
+
+  <!-- Platoon Sergeant -->
+  <div class="level" id="level3">
+    <div class="block nco" id="platoonSgt" data-info="Сержант взвода - SSG - ИГРОК">Platoon Sergeant<br>SSG - ИГРОК</div>
+  </div>
+
+  <!-- Platoon Team -->
+  <div class="level" id="level4">
+    <div class="block nco" id="medic" data-info="Медик - SGT - ИГРОК">Medic<br>SGT - ИГРОК</div>
+    <div class="block specialist" id="hazmat" data-info="Специалист ХБРЯ угроз - SGT - ИГРОК">Hazmat<br>SGT - ИГРОК</div>
+    <div class="block specialist" id="rifleman" data-info="Стрелок - SPC - ИГРОК">Rifleman<br>SPC - ИГРОК</div>
+    <div class="block nco" id="mechanic" data-info="Механик-водитель/Инженер - CPL - ИГРОК">Mechanic/Engineer<br>CPL - ИГРОК</div>
+    <div class="block nco" id="assault" data-info="Штурмовик - CPL - ИГРОК">Assault<br>CPL - ИГРОК</div>
+    <div class="block nco" id="mg" data-info="Пулемётчик - CPL - ИГРОК">MG<br>CPL - ИГРОК</div>
+    <div class="block specialist" id="grenadier" data-info="Гренадёр - SPC - ИГРОК">Grenadier<br>SPC - ИГРОК</div>
+    <div class="block specialist" id="sniper" data-info="Снайпер - SPC - ИГРОК">Sniper<br>SPC - ИГРОК</div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+<svg id="connections"></svg>
+
+<script>
+function connectBlocks(parentId, childrenIds) {
+    const svg = document.getElementById("connections");
+    const parent = document.getElementById(parentId);
+    const parentRect = parent.getBoundingClientRect();
+
+    childrenIds.forEach(childId => {
+        const child = document.getElementById(childId);
+        const childRect = child.getBoundingClientRect();
+
+        const startX = parentRect.left + parentRect.width/2 + window.scrollX;
+        const startY = parentRect.bottom + window.scrollY;
+        const endX = childRect.left + childRect.width/2 + window.scrollX;
+        const endY = childRect.top + window.scrollY;
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+        path.setAttribute("d", `M${startX},${startY} C${startX},${startY+20} ${endX},${endY-20} ${endX},${endY}`);
+        path.setAttribute("stroke","white");
+        path.setAttribute("stroke-width","2");
+        path.setAttribute("fill","transparent");
+        svg.appendChild(path);
+    });
+}
+
+// Tooltip
+const tooltip = document.getElementById("tooltip");
+document.querySelectorAll(".block").forEach(block => {
+    block.addEventListener("mouseover", (e) => {
+        tooltip.style.display = "block";
+        tooltip.innerHTML = block.dataset.info;
+    });
+    block.addEventListener("mousemove", (e) => {
+        tooltip.style.left = e.pageX + 15 + "px";
+        tooltip.style.top = e.pageY + 15 + "px";
+    });
+    block.addEventListener("mouseout", () => { tooltip.style.display = "none"; });
+});
+
+window.addEventListener("load", () => {
+    connectBlocks("companyCommander", ["platoonCommander"]);
+    connectBlocks("platoonCommander", ["platoonSgt"]);
+    connectBlocks("platoonSgt", ["medic","hazmat","rifleman","mechanic","assault","mg","grenadier","sniper"]);
+});
+</script>
+
+</body>
+</html>
